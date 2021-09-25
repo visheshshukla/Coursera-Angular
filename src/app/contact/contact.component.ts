@@ -1,7 +1,8 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Feedback, ContactType } from '../shared/feedback';
-import { flyInOut } from '../animations/app.animation';
+import { flyInOut, expand } from '../animations/app.animation';
+import { FeedbackService } from '../services/feedback.service';
 
 @Component({
   selector: 'app-contact',
@@ -12,7 +13,8 @@ import { flyInOut } from '../animations/app.animation';
     'style': 'display: block;'
     },
     animations: [
-      flyInOut()
+      flyInOut(),
+      expand()
     ]
 })
 export class ContactComponent implements OnInit {
@@ -22,6 +24,11 @@ export class ContactComponent implements OnInit {
   feedbackForm: FormGroup;
   feedback: Feedback;
   contactType = ContactType;
+  isShowingForm: boolean = true;
+  isSubmitting: boolean = false;
+  submissionResponse: any;
+  errMess: string;
+  isShowingResponse: boolean = false;
   
   formErrors = {
     'firstname': '',
@@ -51,7 +58,7 @@ export class ContactComponent implements OnInit {
     }
   };
 
-  constructor(private fb: FormBuilder) {
+  constructor(private fb: FormBuilder, private feedbackService: FeedbackService) {
     this.createForm();
    }
 
@@ -98,6 +105,19 @@ export class ContactComponent implements OnInit {
   onSubmit() {
     this.feedback = this.feedbackForm.value;
     console.log(this.feedback);
+    this.isSubmitting = true;
+    this.isShowingForm = false;
+
+    this.feedbackService.submitFeedback(this.feedback)
+      .subscribe(response => {
+        this.submissionResponse = response;
+        this.resetSubmitting();
+      },
+      errmess => { 
+        this.errMess = <any>errmess;
+        this.resetSubmitting() 
+      });
+
     this.feedbackForm.reset({
       firstname: '',
       lastname: '',
@@ -108,6 +128,18 @@ export class ContactComponent implements OnInit {
       message: ''
     });
     this.feedbackFormDirective.resetForm();
+  }
+
+  resetSubmitting() {
+    this.isSubmitting = false;
+    this.isShowingResponse = true;
+    setTimeout(() => {
+      this.isShowingForm = true;
+      this.isSubmitting = false;
+      this.submissionResponse = null;
+      this.errMess = null;
+      this.isShowingResponse = false;      
+    }, 10000);
   }
 
 }
